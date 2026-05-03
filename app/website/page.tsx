@@ -2,13 +2,6 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 
-type ClientType =
-  | "Airbnb Host"
-  | "Realtor"
-  | "Property Manager"
-  | "Property Owner"
-  | "Other";
-
 type ServiceType =
   | "Airbnb Turnover Cleaning"
   | "Pre-Listing Cleaning"
@@ -623,6 +616,47 @@ function ServicesSection() {
 
 function BeforeAfterSection() {
   const [slider, setSlider] = useState(55);
+  const [activePhoto, setActivePhoto] = useState(0);
+
+  const photoSets = [
+    {
+      label: "Bedroom Reset",
+      before: "/cleaning-photos/before-bedroom.jpeg",
+      after: "/cleaning-photos/after-bedroom.jpeg",
+      description:
+        "Bedroom reset focused on presentation, surfaces, bedding, floor detail, and guest-ready appearance.",
+    },
+    {
+      label: "Living Room / Couch Area",
+      before: "/cleaning-photos/before-couch.jpeg",
+      after: "/cleaning-photos/after-couch.jpeg",
+      description:
+        "Living area cleaning focused on presentation, surfaces, seating area, floors, and overall room reset.",
+    },
+    {
+      label: "Kitchen Reset",
+      before: "/cleaning-photos/before-kitchen.jpeg",
+      after: "/cleaning-photos/after-kitchen.jpeg",
+      description:
+        "Kitchen reset focused on counters, sink area, appliances, surfaces, and clean guest-ready presentation.",
+    },
+    {
+      label: "Refrigerator Detail",
+      before: "/cleaning-photos/before-refrigerator.jpeg",
+      after: "/cleaning-photos/after-refrigerator.jpeg",
+      description:
+        "Refrigerator detail focused on removing mess, improving presentation, and making the appliance feel ready for use.",
+    },
+    {
+      label: "Sink Detail",
+      before: "/cleaning-photos/before-sink.jpeg",
+      after: "/cleaning-photos/after-sink.jpeg",
+      description:
+        "Sink detail focused on removing visible buildup, improving shine, and making high-touch areas look clean.",
+    },
+  ];
+
+  const current = photoSets[activePhoto];
 
   return (
     <section className="bg-[#07111F] text-white">
@@ -631,21 +665,23 @@ function BeforeAfterSection() {
           <p className="text-sm font-black uppercase tracking-widest text-[#F5D06F]">
             Visual proof
           </p>
+
           <h2 className="mt-3 text-3xl font-black tracking-tight md:text-5xl">
-            Add real before/after photos here when you have them.
+            Real before-and-after results from property cleans.
           </h2>
+
           <p className="mt-5 text-lg leading-8 text-slate-300">
-            This section is designed for proof. Right now it uses a clean
-            interactive placeholder. Replace it with real kitchen, bathroom,
-            turnover, and move-out photos.
+            Clean photos are not just for looks. They create accountability,
+            reduce uncertainty, and let off-site owners, hosts, agents, and
+            managers see the difference without needing to be there.
           </p>
 
           <div className="mt-8 grid gap-3 sm:grid-cols-2">
             {[
               "Kitchen resets",
-              "Bathroom details",
-              "Move-out cleans",
-              "Airbnb turnovers",
+              "Bedroom resets",
+              "Refrigerator details",
+              "Sink details",
             ].map((item) => (
               <div
                 key={item}
@@ -655,34 +691,50 @@ function BeforeAfterSection() {
               </div>
             ))}
           </div>
+
+          <div className="mt-8 flex flex-wrap gap-3">
+            {photoSets.map((set, index) => (
+              <button
+                key={set.label}
+                onClick={() => {
+                  setActivePhoto(index);
+                  setSlider(55);
+                }}
+                className={`rounded-xl px-4 py-3 text-sm font-black transition ${
+                  activePhoto === index
+                    ? "bg-[#F5D06F] text-[#07111F]"
+                    : "border border-white/15 bg-white/10 text-white hover:bg-white/15"
+                }`}
+              >
+                {set.label}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className="rounded-[2rem] border border-white/10 bg-white/10 p-5 shadow-2xl backdrop-blur">
-          <div className="relative h-[420px] overflow-hidden rounded-[1.5rem] bg-slate-900">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,_rgba(255,255,255,0.20),_transparent_30%),linear-gradient(135deg,_#1f2937,_#020617)]" />
-            <div
-              className="absolute inset-y-0 left-0 overflow-hidden bg-[linear-gradient(135deg,_#f8fafc,_#dbeafe)]"
-              style={{ width: `${slider}%` }}
-            >
-              <div className="h-full w-[760px] p-8 text-[#07111F]">
-                <p className="rounded-full bg-white/80 px-4 py-2 text-sm font-black shadow">
-                  AFTER
-                </p>
-                <div className="mt-16 grid gap-4">
-                  <div className="h-16 rounded-2xl bg-white shadow" />
-                  <div className="h-24 rounded-2xl bg-white shadow" />
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="h-28 rounded-2xl bg-white shadow" />
-                    <div className="h-28 rounded-2xl bg-white shadow" />
-                  </div>
-                </div>
-              </div>
+          <div className="relative h-[420px] overflow-hidden rounded-[1.5rem] bg-slate-950">
+            <img
+              src={current.before}
+              alt={`${current.label} before cleaning`}
+              className="absolute inset-0 h-full w-full object-contain"
+            />
+
+            <img
+              src={current.after}
+              alt={`${current.label} after cleaning`}
+              className="absolute inset-0 h-full w-full object-contain"
+              style={{
+                clipPath: `inset(0 ${100 - slider}% 0 0)`,
+              }}
+            />
+
+            <div className="absolute left-6 top-6 rounded-full bg-black/60 px-4 py-2 text-sm font-black text-white backdrop-blur">
+              BEFORE
             </div>
 
-            <div className="absolute inset-0 p-8">
-              <p className="inline-block rounded-full bg-black/50 px-4 py-2 text-sm font-black text-white">
-                BEFORE
-              </p>
+            <div className="absolute left-6 top-20 rounded-full bg-[#F5D06F] px-4 py-2 text-sm font-black text-[#07111F] shadow-lg">
+              AFTER
             </div>
 
             <div
@@ -705,10 +757,12 @@ function BeforeAfterSection() {
             aria-label="Before and after image slider"
           />
 
-          <p className="mt-4 text-center text-sm text-slate-300">
-            Interactive placeholder. Replace with real proof photos before
-            pushing heavy traffic.
-          </p>
+          <div className="mt-5 rounded-2xl bg-white/10 p-5">
+            <p className="font-black text-[#F5D06F]">{current.label}</p>
+            <p className="mt-2 text-sm leading-6 text-slate-300">
+              {current.description}
+            </p>
+          </div>
         </div>
       </div>
     </section>
