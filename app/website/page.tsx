@@ -1112,34 +1112,62 @@ function ProofSection() {
 }
 
 function QuoteSection() {
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">(
+    "idle"
+  );
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    const form = new FormData(event.currentTarget);
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
 
-    const name = form.get("name") || "";
-    const contact = form.get("contact") || "";
-    const propertySize = form.get("propertySize") || "";
-    const city = form.get("city") || "";
-    const date = form.get("date") || "";
-    const clientType = form.get("clientType") || "";
-    const service = form.get("service") || "";
-    const details = form.get("details") || "";
+    // Hidden honeypot field: real visitors never fill it in, bots often do.
+    if (form.get("company")) return;
 
-    const subject = encodeURIComponent("Cleaning Quote Request");
+    const payload = {
+      name: String(form.get("name") || ""),
+      contact: String(form.get("contact") || ""),
+      propertySize: String(form.get("propertySize") || ""),
+      city: String(form.get("city") || ""),
+      date: String(form.get("date") || ""),
+      clientType: String(form.get("clientType") || ""),
+      service: String(form.get("service") || ""),
+      details: String(form.get("details") || ""),
+    };
 
-    const body = encodeURIComponent(
-      `Name: ${name}\n` +
-        `Phone or Email: ${contact}\n` +
-        `Client Type: ${clientType}\n` +
-        `Service Needed: ${service}\n` +
-        `Property Size: ${propertySize}\n` +
-        `City: ${city}\n` +
-        `Preferred Cleaning Date: ${date}\n` +
-        `What needs attention: ${details}`
-    );
+    setStatus("sending");
 
-    window.location.href = `mailto:Kafele.kleaning@gmail.com?subject=${subject}&body=${body}`;
+    try {
+      const response = await fetch(
+        "https://hook.eu1.make.com/686xm5yw89izbiijypiq50cbxvgqhgha",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        }
+      );
+
+      if (!response.ok) throw new Error("Request failed");
+
+      formElement.reset();
+      setStatus("sent");
+    } catch {
+      // Fall back to the old email draft so the lead is never lost.
+      const subject = encodeURIComponent("Cleaning Quote Request");
+      const body = encodeURIComponent(
+        `Name: ${payload.name}\n` +
+          `Phone or Email: ${payload.contact}\n` +
+          `Client Type: ${payload.clientType}\n` +
+          `Service Needed: ${payload.service}\n` +
+          `Property Size: ${payload.propertySize}\n` +
+          `City: ${payload.city}\n` +
+          `Preferred Cleaning Date: ${payload.date}\n` +
+          `What needs attention: ${payload.details}`
+      );
+      setStatus("error");
+      window.location.href = `mailto:Kafele.kleaning@gmail.com?subject=${subject}&body=${body}`;
+    }
   };
 
   const inputFields = [
@@ -1270,12 +1298,29 @@ function QuoteSection() {
               />
             </label>
 
+            <input
+              type="text"
+              name="company"
+              tabIndex={-1}
+              autoComplete="off"
+              aria-hidden="true"
+              className="hidden"
+            />
+
             <button
               type="submit"
-              className="rounded-xl bg-[#07111F] px-7 py-4 text-center font-black text-white transition hover:-translate-y-1 hover:bg-[#13233A]"
+              disabled={status === "sending"}
+              className="rounded-xl bg-[#07111F] px-7 py-4 text-center font-black text-white transition hover:-translate-y-1 hover:bg-[#13233A] disabled:opacity-60"
             >
-              Send Quote Request
+              {status === "sending" ? "Sending..." : "Send Quote Request"}
             </button>
+
+            {status === "sent" && (
+              <p className="rounded-xl bg-green-50 px-4 py-3 text-center text-sm font-bold text-green-800">
+                Got it. We received your request and will be in touch with
+                pricing.
+              </p>
+            )}
 
             <p className="text-center text-sm text-slate-500">
               Prefer direct contact? Email:{" "}
