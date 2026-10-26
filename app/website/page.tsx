@@ -10,8 +10,52 @@ type ServiceType =
   | "Property Management Cleaning"
   | "Not sure yet";
 
+const SOURCE_KEY = "kk_lead_source";
+
+type LeadSource = { source: string; campaign: string };
+
+// Remembers where a visitor came from (ad link tags like ?utm_source=google)
+// so the quote form can report it, even if they browse around first.
+function captureLeadSource() {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const source =
+      params.get("utm_source") ||
+      (params.get("gclid") ? "google" : "") ||
+      (params.get("fbclid") ? "facebook" : "");
+    if (!source) return;
+    const value: LeadSource = {
+      source,
+      campaign: params.get("utm_campaign") || "",
+    };
+    localStorage.setItem(SOURCE_KEY, JSON.stringify(value));
+  } catch {
+    // Storage can be blocked; the lead is still captured as "direct".
+  }
+}
+
+function readLeadSource(): LeadSource {
+  try {
+    const raw = localStorage.getItem(SOURCE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw) as Partial<LeadSource>;
+      return {
+        source: String(parsed.source || "direct"),
+        campaign: String(parsed.campaign || ""),
+      };
+    }
+  } catch {
+    // Fall through to direct.
+  }
+  return { source: "direct", campaign: "" };
+}
+
 export default function WebsitePage() {
   const [scrollY, setScrollY] = useState(0);
+
+  useEffect(() => {
+    captureLeadSource();
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => setScrollY(window.scrollY);
@@ -1134,6 +1178,7 @@ function QuoteSection() {
       clientType: String(form.get("clientType") || ""),
       service: String(form.get("service") || ""),
       details: String(form.get("details") || ""),
+      ...readLeadSource(),
     };
 
     setStatus("sending");
