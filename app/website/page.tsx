@@ -46,52 +46,73 @@ function readLeadSource(): LeadSource {
   return { source: "direct", campaign: "" };
 }
 
+const DEFAULT_SERVICE = "Airbnb Turnover Cleaning";
+
+// `option` must match an option in the quote form's service dropdown.
 const services = [
   {
     title: "Airbnb turnovers",
-    text: "A full reset between guests, so every check-in is review-ready.",
+    option: "Airbnb Turnover Cleaning",
+    text: "Beds made, kitchen wiped, bathrooms reset. Ready for the next check-in.",
   },
   {
     title: "Pre-listing cleaning",
-    text: "Showing-ready homes for realtors and sellers.",
+    option: "Pre-Listing Cleaning",
+    text: "Clean enough to photograph and show.",
   },
   {
     title: "Move-in and move-out",
-    text: "Empty units cleaned for owners and managers.",
+    option: "Move-In / Move-Out Cleaning",
+    text: "Empty units, including inside the cabinets and appliances.",
   },
   {
     title: "Deep cleaning",
-    text: "The buildup a regular clean misses.",
+    option: "Deep Cleaning",
+    text: "Under the sink, inside the fridge, behind the stove.",
   },
   {
     title: "Property management",
-    text: "Steady cleaning support across multiple units.",
+    option: "Property Management Cleaning",
+    text: "One standard across every unit you manage.",
   },
 ];
 
 const results = [
   {
-    label: "Under the sink",
+    label: "Under the sink, cleaned out and wiped down.",
     before: "/cleaning-photos/before-sink.jpeg",
     after: "/cleaning-photos/after-sink.jpeg",
   },
   {
-    label: "Refrigerator",
+    label: "Refrigerator shelves and drawers, emptied and scrubbed.",
     before: "/cleaning-photos/before-refrigerator.jpeg",
     after: "/cleaning-photos/after-refrigerator.jpeg",
   },
 ];
 
 const steps = [
-  "Send us the property details.",
-  "Get clear pricing, no pressure.",
-  "We clean and send photos when it's done.",
+  "Tell us the property, city and date.",
+  "We send a clear price.",
+  "We clean, then send you photos.",
 ];
 
 export default function WebsitePage() {
+  const [service, setService] = useState(DEFAULT_SERVICE);
+
   useEffect(() => {
     captureLeadSource();
   }, []);
+
+  // Tapping a service pre-selects it in the quote form and scrolls there.
+  const pickService = (option: string) => {
+    setService(option);
+    const reduceMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)"
+    ).matches;
+    document
+      .getElementById("quote")
+      ?.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth" });
+  };
 
   return (
     <main className="bg-black text-white antialiased [font-family:'Helvetica_Neue',Helvetica,Arial,sans-serif]">
@@ -100,13 +121,30 @@ export default function WebsitePage() {
 
       {/* Everything below slides up over the pinned hero photo. */}
       <div className="relative z-10 bg-black">
-        <Services />
+        <Services onPick={pickService} />
         <Results />
         <Steps />
-        <Quote />
+        <Quote service={service} onServiceChange={setService} />
         <Footer />
       </div>
     </main>
+  );
+}
+
+function Logo({ size }: { size: number }) {
+  return (
+    <span
+      className="inline-flex shrink-0 overflow-hidden rounded-xl bg-white"
+      style={{ width: size, height: size }}
+    >
+      <Image
+        src="/cleaning-photos/kafele-mark.png"
+        alt=""
+        width={240}
+        height={240}
+        className="h-full w-full object-contain p-0.5"
+      />
+    </span>
   );
 }
 
@@ -130,8 +168,9 @@ function Nav() {
     >
       <a
         href="#top"
-        className="text-lg font-bold tracking-tight focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
+        className="flex items-center gap-3 text-lg font-bold tracking-tight focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
       >
+        <Logo size={44} />
         Kafele Kleaning
       </a>
       <a
@@ -196,10 +235,12 @@ function Hero() {
           fill
           priority
           sizes="100vw"
-          className="object-cover grayscale"
+          className="object-cover"
         />
       </div>
-      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-black/30" />
+      {/* Light on top so the photo keeps its color, dark at the bottom for the headline. */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/25 to-black/10" />
+      <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-black/50 to-transparent" />
 
       <div
         ref={textRef}
@@ -208,9 +249,9 @@ function Hero() {
         <h1 className="max-w-4xl text-[clamp(3rem,9vw,8rem)] font-extrabold leading-[0.92] tracking-[-0.045em]">
           Ready for the next guest.
         </h1>
-        <p className="mt-6 max-w-xl text-lg leading-7 text-neutral-300 md:text-xl">
-          Photo-verified Airbnb turnover cleaning across Los Angeles, Orange
-          County and Palm Springs.
+        <p className="mt-6 max-w-xl text-lg leading-7 text-neutral-200 md:text-xl">
+          Airbnb turnover cleaning in Los Angeles, Orange County and Palm
+          Springs. Every clean ends with photos sent to you.
         </p>
         <a
           href="#quote"
@@ -223,25 +264,31 @@ function Hero() {
   );
 }
 
-function Services() {
+function Services({ onPick }: { onPick: (option: string) => void }) {
   return (
     <section className="mx-auto max-w-6xl px-6 py-24 md:px-12 md:py-36">
       <h2 className="max-w-3xl text-4xl font-extrabold leading-[1] tracking-[-0.035em] md:text-6xl">
-        We clean the places people book.
+        Guests check out. We reset the place.
       </h2>
 
       <ul className="mt-14 border-t border-neutral-800">
         {services.map((service) => (
-          <li
-            key={service.title}
-            className="grid gap-2 border-b border-neutral-800 py-7 md:grid-cols-2 md:gap-10 md:py-9"
-          >
-            <h3 className="text-2xl font-bold tracking-tight md:text-3xl">
-              {service.title}
-            </h3>
-            <p className="text-lg leading-7 text-neutral-400">
-              {service.text}
-            </p>
+          <li key={service.title} className="border-b border-neutral-800">
+            <button
+              type="button"
+              onClick={() => onPick(service.option)}
+              className="group grid w-full gap-2 py-7 text-left transition-colors hover:bg-neutral-950 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-white md:grid-cols-[1fr_1fr_auto] md:items-center md:gap-10 md:py-9"
+            >
+              <span className="text-2xl font-bold tracking-tight transition-transform duration-300 md:text-3xl md:group-hover:translate-x-2">
+                {service.title}
+              </span>
+              <span className="text-lg leading-7 text-neutral-400">
+                {service.text}
+              </span>
+              <span className="hidden text-sm font-bold text-white md:block md:opacity-0 md:transition-opacity md:group-hover:opacity-100 md:group-focus-visible:opacity-100">
+                Get a quote for this
+              </span>
+            </button>
           </li>
         ))}
       </ul>
@@ -253,11 +300,10 @@ function Results() {
   return (
     <section className="mx-auto max-w-6xl px-6 pb-24 md:px-12 md:pb-36">
       <h2 className="text-4xl font-extrabold leading-[1] tracking-[-0.035em] md:text-6xl">
-        Before and after.
+        This is what you get back.
       </h2>
       <p className="mt-5 max-w-xl text-lg leading-7 text-neutral-400">
-        Real photos from real jobs. You get photos like these after every
-        clean.
+        Photos from real jobs. After each clean, you get ones like these.
       </p>
 
       <div className="mt-12 grid gap-12 md:grid-cols-2">
@@ -285,7 +331,7 @@ function Results() {
                 </div>
               ))}
             </div>
-            <figcaption className="mt-3 text-neutral-400">
+            <figcaption className="mt-3 max-w-sm text-neutral-400">
               {pair.label}
             </figcaption>
           </figure>
@@ -299,7 +345,7 @@ function Steps() {
   return (
     <section className="mx-auto max-w-6xl px-6 pb-24 md:px-12 md:pb-36">
       <h2 className="text-4xl font-extrabold leading-[1] tracking-[-0.035em] md:text-6xl">
-        How it works.
+        Three steps. No surprises.
       </h2>
       <ol className="mt-12 grid gap-10 md:grid-cols-3">
         {steps.map((step, index) => (
@@ -318,7 +364,13 @@ function Steps() {
 const fieldClass =
   "w-full border-0 border-b border-neutral-300 bg-transparent px-0 py-3 text-lg text-black outline-none transition placeholder:text-neutral-400 focus:border-black";
 
-function Quote() {
+function Quote({
+  service,
+  onServiceChange,
+}: {
+  service: string;
+  onServiceChange: (option: string) => void;
+}) {
   const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">(
     "idle"
   );
@@ -356,6 +408,7 @@ function Quote() {
       if (!response.ok) throw new Error("Request failed");
 
       formElement.reset();
+      onServiceChange(DEFAULT_SERVICE);
       setStatus("sent");
     } catch {
       // Fall back to an email draft so the lead is never lost.
@@ -383,8 +436,8 @@ function Quote() {
             Get a quote.
           </h2>
           <p className="mt-6 max-w-sm text-lg leading-7 text-neutral-600">
-            Tell us about the property and we&apos;ll send clear pricing. Start
-            with one clean and judge us on the result.
+            Give us the basics and you&apos;ll get a price, not a sales pitch.
+            Start with one clean and judge us on the result.
           </p>
           <p className="mt-8 text-neutral-600">
             Prefer email?{" "}
@@ -454,7 +507,12 @@ function Quote() {
             </label>
             <label className="grid">
               <span className="text-sm font-bold">Service</span>
-              <select name="service" className={fieldClass}>
+              <select
+                name="service"
+                value={service}
+                onChange={(event) => onServiceChange(event.target.value)}
+                className={fieldClass}
+              >
                 <option>Airbnb Turnover Cleaning</option>
                 <option>Pre-Listing Cleaning</option>
                 <option>Deep Cleaning</option>
@@ -519,7 +577,10 @@ function Quote() {
 function Footer() {
   return (
     <footer className="mx-auto flex max-w-6xl flex-col gap-3 px-6 py-12 text-neutral-400 md:flex-row md:items-center md:justify-between md:px-12">
-      <p className="font-bold text-white">Kafele Kleaning</p>
+      <p className="flex items-center gap-3 font-bold text-white">
+        <Logo size={40} />
+        Kafele Kleaning
+      </p>
       <p>Los Angeles, Orange County and Palm Springs</p>
       <a
         href={`mailto:${EMAIL}`}
