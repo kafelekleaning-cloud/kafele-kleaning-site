@@ -1,16 +1,12 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
-
-type ServiceType =
-  | "Airbnb Turnover Cleaning"
-  | "Pre-Listing Cleaning"
-  | "Deep Cleaning"
-  | "Move-In / Move-Out Cleaning"
-  | "Property Management Cleaning"
-  | "Not sure yet";
+import Image from "next/image";
+import { FormEvent, useEffect, useRef, useState } from "react";
 
 const SOURCE_KEY = "kk_lead_source";
+const WEBHOOK_URL =
+  "https://hook.eu1.make.com/686xm5yw89izbiijypiq50cbxvgqhgha";
+const EMAIL = "Kafele.kleaning@gmail.com";
 
 type LeadSource = { source: string; campaign: string };
 
@@ -50,1112 +46,331 @@ function readLeadSource(): LeadSource {
   return { source: "direct", campaign: "" };
 }
 
+const DEFAULT_SERVICE = "Airbnb Turnover Cleaning";
+
+// `option` must match an option in the quote form's service dropdown.
+const services = [
+  {
+    title: "Airbnb turnovers",
+    option: "Airbnb Turnover Cleaning",
+    text: "Beds made, kitchen wiped, bathrooms reset. Ready for the next check-in.",
+  },
+  {
+    title: "Pre-listing cleaning",
+    option: "Pre-Listing Cleaning",
+    text: "Clean enough to photograph and show.",
+  },
+  {
+    title: "Move-in and move-out",
+    option: "Move-In / Move-Out Cleaning",
+    text: "Empty units, including inside the cabinets and appliances.",
+  },
+  {
+    title: "Deep cleaning",
+    option: "Deep Cleaning",
+    text: "Under the sink, inside the fridge, behind the stove.",
+  },
+  {
+    title: "Property management",
+    option: "Property Management Cleaning",
+    text: "One standard across every unit you manage.",
+  },
+];
+
+const results = [
+  {
+    label: "Under the sink, cleaned out and wiped down.",
+    before: "/cleaning-photos/before-sink.jpeg",
+    after: "/cleaning-photos/after-sink.jpeg",
+  },
+  {
+    label: "Refrigerator shelves and drawers, emptied and scrubbed.",
+    before: "/cleaning-photos/before-refrigerator.jpeg",
+    after: "/cleaning-photos/after-refrigerator.jpeg",
+  },
+];
+
+const steps = [
+  "Tell us the property, city and date.",
+  "We send a clear price.",
+  "We clean, then send you photos.",
+];
+
 export default function WebsitePage() {
-  const [scrollY, setScrollY] = useState(0);
+  const [service, setService] = useState(DEFAULT_SERVICE);
 
   useEffect(() => {
     captureLeadSource();
   }, []);
 
-  useEffect(() => {
-    const handleScroll = () => setScrollY(window.scrollY);
-
-    window.addEventListener("scroll", handleScroll);
-    handleScroll();
-
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+  // Tapping a service pre-selects it in the quote form and scrolls there.
+  const pickService = (option: string) => {
+    setService(option);
+    const reduceMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)"
+    ).matches;
+    document
+      .getElementById("quote")
+      ?.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth" });
+  };
 
   return (
-    <main className="min-h-screen overflow-hidden bg-[#F7F9FC] text-[#0B1220]">
-      <StickyMobileCTA />
-      <Hero scrollY={scrollY} />
-      <TrustStrip />
-      <MarketSelector />
-      <ProblemSection />
-      <SystemSection />
-      <ImmersiveProcess />
-      <ServicesSection />
-      <BeforeAfterSection />
-      <TestimonialsSection />
-      <ColdLeadSection />
-      <FounderSection />
-      <QuoteCalculatorSection />
-      <ProofSection />
-      <QuoteSection />
-      <LeadMagnetSection />
-      <FAQSection />
-      <FinalCTA />
+    <main className="bg-black text-white antialiased [font-family:'Helvetica_Neue',Helvetica,Arial,sans-serif]">
+      <Nav />
+      <Hero />
+
+      {/* Everything below slides up over the pinned hero photo. */}
+      <div className="relative z-10 bg-black">
+        <Services onPick={pickService} />
+        <Results />
+        <Steps />
+        <Quote service={service} onServiceChange={setService} />
+        <Footer />
+      </div>
     </main>
   );
 }
 
-function StickyMobileCTA() {
+function Logo({ size }: { size: number }) {
   return (
-    <div className="fixed bottom-4 left-4 right-4 z-50 md:hidden">
+    <span
+      className="inline-flex shrink-0 overflow-hidden rounded-xl bg-white"
+      style={{ width: size, height: size }}
+    >
+      <Image
+        src="/cleaning-photos/kafele-mark.png"
+        alt=""
+        width={240}
+        height={240}
+        className="h-full w-full object-contain p-0.5"
+      />
+    </span>
+  );
+}
+
+function Nav() {
+  const [solid, setSolid] = useState(false);
+
+  // Transparent over the photo, solid black once the page scrolls under it so
+  // the logo stays readable over the white quote section.
+  useEffect(() => {
+    const onScroll = () => setSolid(window.scrollY > window.innerHeight * 0.6);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  return (
+    <header
+      className={`fixed inset-x-0 top-0 z-30 flex items-center justify-between px-6 py-4 transition-colors duration-300 md:px-12 ${
+        solid ? "bg-black/90 backdrop-blur" : "bg-transparent"
+      }`}
+    >
+      <a
+        href="#top"
+        className="flex items-center gap-3 text-lg font-bold tracking-tight focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
+      >
+        <Logo size={44} />
+        Kafele Kleaning
+      </a>
       <a
         href="#quote"
-        className="block rounded-2xl bg-[#F5D06F] px-5 py-4 text-center text-sm font-black text-[#07111F] shadow-2xl shadow-black/25"
+        className="rounded-full bg-white px-5 py-2.5 text-sm font-bold text-black transition hover:bg-neutral-200 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
       >
-        Request Quote →
+        Get a quote
       </a>
-    </div>
+    </header>
   );
 }
 
-function Hero({ scrollY }: { scrollY: number }) {
-  return (
-    <section className="relative min-h-screen overflow-hidden bg-[#050B14] text-white">
-      <div
-        className="absolute inset-0 opacity-80"
-        style={{
-          transform: `translateY(${scrollY * 0.18}px)`,
-        }}
-      >
-        <div className="absolute left-[-10%] top-[-10%] h-[420px] w-[420px] rounded-full bg-[#F5D06F]/20 blur-[120px]" />
-        <div className="absolute bottom-[-15%] right-[-10%] h-[520px] w-[520px] rounded-full bg-blue-600/20 blur-[140px]" />
-      </div>
+function Hero() {
+  const photoRef = useRef<HTMLDivElement>(null);
+  const textRef = useRef<HTMLDivElement>(null);
 
-      <div
-        className="absolute inset-0 opacity-[0.08]"
-        style={{
-          backgroundImage:
-            "linear-gradient(#ffffff 1px, transparent 1px), linear-gradient(90deg, #ffffff 1px, transparent 1px)",
-          backgroundSize: "70px 70px",
-          transform: `translateY(${scrollY * 0.08}px)`,
-        }}
-      />
+  // The photo stays pinned while the page slides over it. As you scroll, it
+  // drifts up, zooms in slightly and the headline fades.
+  useEffect(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
-      <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-[#F7F9FC] to-transparent" />
+    let frame = 0;
+    const update = () => {
+      frame = 0;
+      const progress = Math.min(window.scrollY / window.innerHeight, 1);
+      if (photoRef.current) {
+        photoRef.current.style.transform = `translate3d(0, ${
+          progress * -8
+        }%, 0) scale(${1 + progress * 0.12})`;
+      }
+      if (textRef.current) {
+        textRef.current.style.opacity = String(1 - progress * 1.3);
+        textRef.current.style.transform = `translate3d(0, ${
+          progress * -40
+        }px, 0)`;
+      }
+    };
+    const onScroll = () => {
+      if (!frame) frame = requestAnimationFrame(update);
+    };
 
-      <div className="relative mx-auto grid min-h-screen max-w-7xl gap-12 px-6 py-24 md:grid-cols-[1.1fr_0.9fr] md:items-center md:px-10">
-        <div className="animate-fade-up">
-          <p className="mb-5 inline-flex rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-bold text-[#F5D06F] backdrop-blur">
-            Airbnb • Realtor • Property Management Cleaning
-          </p>
-
-          <h1 className="max-w-4xl text-4xl font-black tracking-tight md:text-7xl">
-            Property cleaning that protects{" "}
-            <span className="text-[#F5D06F]">
-              reviews, showings, and reputation.
-            </span>
-          </h1>
-
-          <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-300">
-            Kafele Kleaning provides checklist-driven, photo-verified cleaning
-            for Airbnb hosts, realtors, and property managers who need fewer
-            complaints, cleaner handoffs, and more reliable vendor execution.
-          </p>
-
-          <div className="mt-8 flex flex-col gap-4 sm:flex-row">
-            <a
-              href="#quote"
-              className="group rounded-xl bg-[#F5D06F] px-7 py-4 text-center text-base font-black text-[#050B14] shadow-xl shadow-black/20 transition duration-300 hover:-translate-y-1 hover:bg-[#FFE28A]"
-            >
-              Request a Quote
-              <span className="ml-2 inline-block transition group-hover:translate-x-1">
-                →
-              </span>
-            </a>
-
-            <a
-              href="#calculator"
-              className="rounded-xl border border-white/20 bg-white/10 px-7 py-4 text-center text-base font-black text-white backdrop-blur transition duration-300 hover:-translate-y-1 hover:bg-white/15"
-            >
-              Estimate Pricing
-            </a>
-          </div>
-
-          <p className="mt-5 text-sm leading-6 text-slate-400">
-            Start with one clean. Compare the process. Keep us if the standard
-            is stronger than what you have now.
-          </p>
-        </div>
-
-        <div
-          className="animate-float rounded-3xl border border-white/10 bg-white/10 p-5 shadow-2xl backdrop-blur"
-          style={{
-            transform: `translateY(${scrollY * -0.04}px)`,
-          }}
-        >
-          <div className="rounded-2xl bg-white p-6 text-[#0B1220]">
-            <p className="text-sm font-black uppercase tracking-widest text-[#B98700]">
-              Vendor Risk Check
-            </p>
-
-            <h2 className="mt-3 text-2xl font-black">
-              The wrong cleaner costs more than the invoice.
-            </h2>
-
-            <div className="mt-6 space-y-4">
-              {[
-                "A missed detail can turn into a complaint.",
-                "A late update can create scheduling pressure.",
-                "No photos means you are trusting blindly.",
-                "Inconsistent quality makes every clean feel like a gamble.",
-              ].map((item) => (
-                <div key={item} className="flex gap-3">
-                  <span className="mt-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#F5D06F] text-xs font-black">
-                    ✓
-                  </span>
-                  <p className="text-sm leading-6 text-slate-700">{item}</p>
-                </div>
-              ))}
-            </div>
-
-            <a
-              href="#quote"
-              className="mt-7 block rounded-xl bg-[#050B14] px-5 py-4 text-center font-black text-white transition hover:-translate-y-0.5 hover:bg-[#13233A]"
-            >
-              Check Availability
-            </a>
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function TrustStrip() {
-  return (
-    <section className="relative z-10 -mt-10 px-6 md:px-10">
-      <div className="mx-auto grid max-w-7xl gap-4 rounded-3xl border border-slate-200 bg-white p-5 shadow-xl md:grid-cols-5">
-        {[
-          "Checklist-Driven",
-          "Photo-Verified",
-          "Airbnb Ready",
-          "Listing Ready",
-          "Clear Scope",
-        ].map((item) => (
-          <div
-            key={item}
-            className="rounded-2xl bg-[#F7F9FC] px-4 py-4 text-center text-sm font-black text-slate-700 transition hover:-translate-y-1 hover:bg-[#FFF7DF]"
-          >
-            {item}
-          </div>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function MarketSelector() {
-  const markets = [
-    {
-      title: "Airbnb Hosts",
-      pain: "Bad reviews, guest complaints, rushed turnovers, and unreliable cleaners.",
-      promise:
-        "Guest-ready turnovers with checklist standards and photo verification.",
-      cta: "Protect My Next Turnover",
-    },
-    {
-      title: "Realtors",
-      pain: "Listings that show poorly, move-outs that look unfinished, and last-minute cleaning stress.",
-      promise:
-        "Listing-ready cleaning that helps properties feel clean, prepared, and professionally handled.",
-      cta: "Prepare My Listing",
-    },
-    {
-      title: "Property Managers",
-      pain: "Tenant complaints, vendor inconsistency, weak communication, and too much follow-up.",
-      promise:
-        "Reliable cleaning support for turnovers, vacant units, and managed properties.",
-      cta: "Get Vendor Pricing",
-    },
-  ];
-
-  return (
-    <section id="markets" className="relative border-b border-slate-200 bg-white">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(245,208,111,0.12),_transparent_35%)]" />
-
-      <div className="relative mx-auto max-w-7xl px-6 py-24 md:px-10">
-        <div className="mx-auto max-w-3xl text-center animate-fade-up">
-          <p className="text-sm font-black uppercase tracking-widest text-[#B98700]">
-            Choose your situation
-          </p>
-
-          <h2 className="mt-3 text-3xl font-black tracking-tight md:text-5xl">
-            Different properties. Same problem: the clean has to be right.
-          </h2>
-
-          <p className="mt-5 text-lg leading-8 text-slate-700">
-            Whether you manage guests, buyers, tenants, or owners, your cleaning
-            vendor affects how people judge the property.
-          </p>
-        </div>
-
-        <div className="mt-12 grid gap-6 md:grid-cols-3">
-          {markets.map((market, index) => (
-            <div
-              key={market.title}
-              className="group rounded-3xl border border-slate-200 bg-[#F7F9FC] p-7 shadow-sm transition duration-500 hover:-translate-y-2 hover:shadow-2xl"
-              style={{
-                animation: `fadeUp 700ms ease ${index * 120}ms both`,
-              }}
-            >
-              <h3 className="text-2xl font-black">{market.title}</h3>
-
-              <div className="mt-5 rounded-2xl bg-white p-5 transition duration-300 group-hover:shadow-md">
-                <p className="text-sm font-black uppercase tracking-wider text-red-700">
-                  Common pain
-                </p>
-                <p className="mt-2 leading-7 text-slate-700">{market.pain}</p>
-              </div>
-
-              <div className="mt-4 rounded-2xl bg-[#07111F] p-5 text-white transition duration-300 group-hover:-translate-y-1">
-                <p className="text-sm font-black uppercase tracking-wider text-[#F5D06F]">
-                  What we solve
-                </p>
-                <p className="mt-2 leading-7 text-slate-300">
-                  {market.promise}
-                </p>
-              </div>
-
-              <a
-                href="#quote"
-                className="mt-6 block rounded-xl bg-[#F5D06F] px-5 py-4 text-center font-black text-[#07111F] transition hover:bg-[#FFE28A]"
-              >
-                {market.cta}
-              </a>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function ProblemSection() {
-  const cards = [
-    {
-      title: "Complaints",
-      text: "Small missed details become big problems when clients, tenants, or guests notice first.",
-    },
-    {
-      title: "Delays",
-      text: "Late cleaners create pressure on check-ins, showings, move-ins, and inspections.",
-    },
-    {
-      title: "Callbacks",
-      text: "A cheap clean is not cheap when you have to send someone back to fix it.",
-    },
-    {
-      title: "Reputation risk",
-      text: "Cleanliness affects how people judge the owner, host, agent, or manager.",
-    },
-  ];
-
-  return (
-    <section className="relative mx-auto max-w-7xl px-6 py-24 md:px-10">
-      <div className="grid gap-10 md:grid-cols-2 md:items-center">
-        <div className="animate-fade-up">
-          <p className="text-sm font-black uppercase tracking-widest text-[#B98700]">
-            The expensive part is not the cleaning
-          </p>
-
-          <h2 className="mt-3 text-3xl font-black tracking-tight md:text-5xl">
-            The expensive part is what happens when the cleaning is not handled
-            correctly.
-          </h2>
-        </div>
-
-        <div className="space-y-5 text-lg leading-8 text-slate-700 animate-fade-up-delay">
-          <p>
-            A missed bathroom detail can become a guest complaint. A rushed
-            turnover can become a bad review. A poorly prepared listing can
-            weaken a buyer’s first impression. A messy tenant turnover can
-            create more work for management.
-          </p>
-
-          <p>
-            Cheap cleaning becomes expensive when it creates stress, callbacks,
-            complaints, refunds, delays, or reputation damage.
-          </p>
-        </div>
-      </div>
-
-      <div className="mt-12 grid gap-5 md:grid-cols-4">
-        {cards.map((card, index) => (
-          <div
-            key={card.title}
-            className="rounded-2xl border border-slate-200 bg-white p-7 shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl"
-            style={{
-              animation: `fadeUp 700ms ease ${index * 100}ms both`,
-            }}
-          >
-            <h3 className="text-xl font-black">{card.title}</h3>
-            <p className="mt-3 leading-7 text-slate-600">{card.text}</p>
-          </div>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function SystemSection() {
-  const steps = [
-    {
-      number: "01",
-      title: "Clear Scope",
-      text: "We confirm the property type, service, priorities, timing, and condition before the clean.",
-    },
-    {
-      number: "02",
-      title: "Checklist Cleaning",
-      text: "The clean follows a room-by-room standard so important details are not left to memory.",
-    },
-    {
-      number: "03",
-      title: "Photo Verification",
-      text: "Before and after photos create accountability, especially for clients who are not on-site.",
-    },
-    {
-      number: "04",
-      title: "Follow-Up",
-      text: "If something needs attention, we tighten the process instead of hiding behind excuses.",
-    },
-  ];
+    update();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      if (frame) cancelAnimationFrame(frame);
+    };
+  }, []);
 
   return (
     <section
-      id="system"
-      className="relative overflow-hidden bg-[#07111F] text-white"
+      id="top"
+      className="sticky top-0 z-0 h-svh w-full overflow-hidden bg-black"
     >
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,_rgba(245,208,111,0.18),_transparent_30%),radial-gradient(circle_at_80%_80%,_rgba(37,99,235,0.14),_transparent_30%)]" />
+      <div
+        ref={photoRef}
+        className="absolute inset-0 will-change-transform"
+      >
+        <Image
+          src="/cleaning-photos/before-couch.jpeg"
+          alt="Living room of a short-term rental, cleaned and staged for the next guest"
+          fill
+          priority
+          sizes="100vw"
+          className="object-cover"
+        />
+      </div>
+      {/* Light on top so the photo keeps its color, dark at the bottom for the headline. */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/25 to-black/10" />
+      <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-black/50 to-transparent" />
 
-      <div className="relative mx-auto max-w-7xl px-6 py-24 md:px-10">
-        <div className="max-w-3xl">
-          <p className="text-sm font-black uppercase tracking-widest text-[#F5D06F]">
-            The Kafele Kleaning system
-          </p>
-
-          <h2 className="mt-3 text-3xl font-black tracking-tight md:text-5xl">
-            Structure, systems, and accountability.
-          </h2>
-
-          <p className="mt-5 text-lg leading-8 text-slate-300">
-            Most cleaners sell effort. We sell a controlled process.
-          </p>
-        </div>
-
-        <div className="mt-12 grid gap-6 md:grid-cols-4">
-          {steps.map((step, index) => (
-            <div
-              key={step.number}
-              className="group rounded-2xl border border-white/10 bg-white/10 p-6 backdrop-blur transition duration-500 hover:-translate-y-2 hover:bg-white/15"
-              style={{
-                animation: `fadeUp 700ms ease ${index * 140}ms both`,
-              }}
-            >
-              <p className="text-sm font-black text-[#F5D06F]">
-                {step.number}
-              </p>
-
-              <h3 className="mt-4 text-xl font-black">{step.title}</h3>
-
-              <p className="mt-3 leading-7 text-slate-300">{step.text}</p>
-            </div>
-          ))}
-        </div>
+      <div
+        ref={textRef}
+        className="absolute inset-x-0 bottom-0 px-6 pb-14 md:px-12 md:pb-20"
+      >
+        <h1 className="max-w-4xl text-[clamp(3rem,9vw,8rem)] font-extrabold leading-[0.92] tracking-[-0.045em]">
+          Ready for the next guest.
+        </h1>
+        <p className="mt-6 max-w-xl text-lg leading-7 text-neutral-200 md:text-xl">
+          Airbnb turnover cleaning in Los Angeles, Orange County and Palm
+          Springs. Every clean ends with photos sent to you.
+        </p>
+        <a
+          href="#quote"
+          className="mt-8 inline-block rounded-full bg-white px-8 py-4 text-base font-bold text-black transition hover:bg-neutral-200 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
+        >
+          Get a quote
+        </a>
       </div>
     </section>
   );
 }
 
-function ImmersiveProcess() {
-  const [active, setActive] = useState(0);
-
-  const steps = [
-    {
-      title: "Scope",
-      text: "We define the property, service, timing, and priorities before the clean starts.",
-    },
-    {
-      title: "Clean",
-      text: "The job follows a checklist-based structure instead of relying on memory or random effort.",
-    },
-    {
-      title: "Verify",
-      text: "Photos and confirmations give off-site owners, hosts, agents, and managers visibility.",
-    },
-    {
-      title: "Improve",
-      text: "If an issue appears, the process gets tightened so the same mistake does not repeat.",
-    },
-  ];
-
+function Services({ onPick }: { onPick: (option: string) => void }) {
   return (
-    <section className="relative overflow-hidden bg-white">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_20%,_rgba(37,99,235,0.10),_transparent_35%)]" />
+    <section className="mx-auto max-w-6xl px-6 py-24 md:px-12 md:py-36">
+      <h2 className="max-w-3xl text-4xl font-extrabold leading-[1] tracking-[-0.035em] md:text-6xl">
+        Guests check out. We reset the place.
+      </h2>
 
-      <div className="relative mx-auto max-w-7xl px-6 py-24 md:px-10">
-        <div className="grid gap-10 md:grid-cols-[0.85fr_1.15fr] md:items-center">
-          <div>
-            <p className="text-sm font-black uppercase tracking-widest text-[#B98700]">
-              Interactive process
-            </p>
-            <h2 className="mt-3 text-3xl font-black tracking-tight md:text-5xl">
-              A clean should feel controlled before, during, and after the job.
-            </h2>
-            <p className="mt-5 text-lg leading-8 text-slate-700">
-              Click through the process. This is the difference between hiring a
-              cleaner and working with a cleaning system.
-            </p>
-          </div>
+      <ul className="mt-14 border-t border-neutral-800">
+        {services.map((service) => (
+          <li key={service.title} className="border-b border-neutral-800">
+            <button
+              type="button"
+              onClick={() => onPick(service.option)}
+              className="group grid w-full gap-2 py-7 text-left transition-colors hover:bg-neutral-950 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-white md:grid-cols-[1fr_1fr_auto] md:items-center md:gap-10 md:py-9"
+            >
+              <span className="text-2xl font-bold tracking-tight transition-transform duration-300 md:text-3xl md:group-hover:translate-x-2">
+                {service.title}
+              </span>
+              <span className="text-lg leading-7 text-neutral-400">
+                {service.text}
+              </span>
+              <span className="hidden text-sm font-bold text-white md:block md:opacity-0 md:transition-opacity md:group-hover:opacity-100 md:group-focus-visible:opacity-100">
+                Get a quote for this
+              </span>
+            </button>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
 
-          <div className="rounded-[2rem] border border-slate-200 bg-[#F7F9FC] p-4 shadow-xl">
-            <div className="grid gap-3 md:grid-cols-4">
-              {steps.map((step, index) => (
-                <button
-                  key={step.title}
-                  onClick={() => setActive(index)}
-                  className={`rounded-2xl px-4 py-4 text-left transition duration-300 ${
-                    active === index
-                      ? "bg-[#07111F] text-white shadow-lg"
-                      : "bg-white text-[#0B1220] hover:-translate-y-1 hover:shadow-md"
-                  }`}
-                >
-                  <p
-                    className={`text-xs font-black uppercase tracking-widest ${
-                      active === index ? "text-[#F5D06F]" : "text-[#B98700]"
-                    }`}
-                  >
-                    0{index + 1}
-                  </p>
-                  <p className="mt-2 font-black">{step.title}</p>
-                </button>
-              ))}
-            </div>
+function Results() {
+  return (
+    <section className="mx-auto max-w-6xl px-6 pb-24 md:px-12 md:pb-36">
+      <h2 className="text-4xl font-extrabold leading-[1] tracking-[-0.035em] md:text-6xl">
+        This is what you get back.
+      </h2>
+      <p className="mt-5 max-w-xl text-lg leading-7 text-neutral-400">
+        Photos from real jobs. After each clean, you get ones like these.
+      </p>
 
-            <div className="mt-4 min-h-[230px] rounded-[1.5rem] bg-white p-7 shadow-sm">
-              <p className="text-sm font-black uppercase tracking-widest text-[#B98700]">
-                {steps[active].title}
-              </p>
-              <h3 className="mt-3 text-3xl font-black">
-                {steps[active].title === "Scope" &&
-                  "No vague expectations before the job starts."}
-                {steps[active].title === "Clean" &&
-                  "Execution follows structure, not guessing."}
-                {steps[active].title === "Verify" &&
-                  "The client gets visibility without being on-site."}
-                {steps[active].title === "Improve" &&
-                  "Problems become process upgrades."}
-              </h3>
-              <p className="mt-4 text-lg leading-8 text-slate-700">
-                {steps[active].text}
-              </p>
-
-              <div className="mt-6 h-3 overflow-hidden rounded-full bg-slate-100">
+      <div className="mt-12 grid gap-12 md:grid-cols-2">
+        {results.map((pair) => (
+          <figure key={pair.label}>
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                { src: pair.before, tag: "Before" },
+                { src: pair.after, tag: "After" },
+              ].map((photo) => (
                 <div
-                  className="h-full rounded-full bg-[#F5D06F] transition-all duration-500"
-                  style={{ width: `${((active + 1) / steps.length) * 100}%` }}
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function ServicesSection() {
-  const services = [
-    {
-      title: "Airbnb Turnover Cleaning",
-      description:
-        "For hosts who need guest-ready properties, fast resets, and fewer review risks.",
-      points: [
-        "Kitchen reset",
-        "Bathroom detail",
-        "Bed and surface reset",
-        "Photo confirmation",
-      ],
-    },
-    {
-      title: "Pre-Listing Cleaning",
-      description:
-        "For realtors and sellers who need the property to show clean, sharp, and ready.",
-      points: [
-        "High-touch areas",
-        "Bathrooms and kitchens",
-        "Floors and surfaces",
-        "Listing-ready presentation",
-      ],
-    },
-    {
-      title: "Move-In / Move-Out Cleaning",
-      description:
-        "For owners, tenants, and managers who need a property reset before the next person walks in.",
-      points: ["Cabinets", "Appliances", "Bathrooms", "Floors and baseboards"],
-    },
-    {
-      title: "Property Management Cleaning",
-      description:
-        "For managers who need reliable vendor support without chasing, guessing, or babysitting.",
-      points: [
-        "Unit turnovers",
-        "Vacant property cleaning",
-        "Photo proof",
-        "Clear communication",
-      ],
-    },
-  ];
-
-  return (
-    <section className="mx-auto max-w-7xl px-6 py-24 md:px-10">
-      <div className="max-w-3xl">
-        <p className="text-sm font-black uppercase tracking-widest text-[#B98700]">
-          Services
-        </p>
-
-        <h2 className="mt-3 text-3xl font-black tracking-tight md:text-5xl">
-          Cleaning built for high-pressure property situations.
-        </h2>
-
-        <p className="mt-5 text-lg leading-8 text-slate-700">
-          The goal is not just clean. The goal is guest-ready, showing-ready,
-          move-in-ready, or management-ready.
-        </p>
-      </div>
-
-      <div className="mt-12 grid gap-6 md:grid-cols-2">
-        {services.map((service, index) => (
-          <div
-            key={service.title}
-            className="group rounded-3xl border border-slate-200 bg-white p-7 shadow-sm transition duration-500 hover:-translate-y-2 hover:shadow-2xl"
-            style={{
-              animation: `fadeUp 700ms ease ${index * 120}ms both`,
-            }}
-          >
-            <h3 className="text-2xl font-black">{service.title}</h3>
-
-            <p className="mt-4 leading-7 text-slate-600">
-              {service.description}
-            </p>
-
-            <ul className="mt-6 grid gap-3 sm:grid-cols-2">
-              {service.points.map((point) => (
-                <li
-                  key={point}
-                  className="rounded-xl bg-[#F7F9FC] px-4 py-3 text-sm font-bold text-slate-700 transition group-hover:bg-[#FFF7DF]"
+                  key={photo.tag}
+                  className="relative aspect-[3/4] overflow-hidden bg-neutral-900"
                 >
-                  ✓ {point}
-                </li>
+                  <Image
+                    src={photo.src}
+                    alt={`${pair.label}, ${photo.tag.toLowerCase()} cleaning`}
+                    fill
+                    sizes="(min-width: 768px) 25vw, 45vw"
+                    className="object-cover"
+                  />
+                  <span className="absolute left-3 top-3 rounded-full bg-black/80 px-3 py-1 text-xs font-bold text-white">
+                    {photo.tag}
+                  </span>
+                </div>
               ))}
-            </ul>
-
-            <a
-              href="#quote"
-              className="mt-7 inline-block rounded-xl border border-slate-300 px-5 py-3 text-center font-black transition hover:border-[#07111F] hover:bg-[#07111F] hover:text-white"
-            >
-              Get Pricing
-            </a>
-          </div>
+            </div>
+            <figcaption className="mt-3 max-w-sm text-neutral-400">
+              {pair.label}
+            </figcaption>
+          </figure>
         ))}
       </div>
     </section>
   );
 }
 
-function BeforeAfterSection() {
-  const [slider, setSlider] = useState(55);
-  const [activePhoto, setActivePhoto] = useState(0);
-
-  const photoSets = [
-    {
-      label: "Bedroom Reset",
-      before: "/cleaning-photos/before-bedroom.jpeg",
-      after: "/cleaning-photos/after-bedroom.jpeg",
-      description:
-        "Bedroom reset focused on presentation, surfaces, bedding, floor detail, and guest-ready appearance.",
-    },
-    {
-      label: "Living Room / Couch Area",
-      before: "/cleaning-photos/before-couch.jpeg",
-      after: "/cleaning-photos/after-couch.jpeg",
-      description:
-        "Living area cleaning focused on presentation, surfaces, seating area, floors, and overall room reset.",
-    },
-    {
-      label: "Kitchen Reset",
-      before: "/cleaning-photos/before-kitchen.jpeg",
-      after: "/cleaning-photos/after-kitchen.jpeg",
-      description:
-        "Kitchen reset focused on counters, sink area, appliances, surfaces, and clean guest-ready presentation.",
-    },
-    {
-      label: "Refrigerator Detail",
-      before: "/cleaning-photos/before-refrigerator.jpeg",
-      after: "/cleaning-photos/after-refrigerator.jpeg",
-      description:
-        "Refrigerator detail focused on removing mess, improving presentation, and making the appliance feel ready for use.",
-    },
-    {
-      label: "Sink Detail",
-      before: "/cleaning-photos/before-sink.jpeg",
-      after: "/cleaning-photos/after-sink.jpeg",
-      description:
-        "Sink detail focused on removing visible buildup, improving shine, and making high-touch areas look clean.",
-    },
-  ];
-
-  const current = photoSets[activePhoto];
-
+function Steps() {
   return (
-    <section className="bg-[#07111F] text-white">
-      <div className="mx-auto grid max-w-7xl gap-10 px-6 py-24 md:grid-cols-[0.95fr_1.05fr] md:items-center md:px-10">
-        <div>
-          <p className="text-sm font-black uppercase tracking-widest text-[#F5D06F]">
-            Visual proof
-          </p>
-
-          <h2 className="mt-3 text-3xl font-black tracking-tight md:text-5xl">
-            Real before-and-after results from property cleans.
-          </h2>
-
-          <p className="mt-5 text-lg leading-8 text-slate-300">
-            Clean photos are not just for looks. They create accountability,
-            reduce uncertainty, and let off-site owners, hosts, agents, and
-            managers see the difference without needing to be there.
-          </p>
-
-          <div className="mt-8 grid gap-3 sm:grid-cols-2">
-            {[
-              "Kitchen resets",
-              "Bedroom resets",
-              "Refrigerator details",
-              "Sink details",
-            ].map((item) => (
-              <div
-                key={item}
-                className="rounded-2xl border border-white/10 bg-white/10 p-4 font-bold backdrop-blur"
-              >
-                ✓ {item}
-              </div>
-            ))}
-          </div>
-
-          <div className="mt-8 flex flex-wrap gap-3">
-            {photoSets.map((set, index) => (
-              <button
-                key={set.label}
-                onClick={() => {
-                  setActivePhoto(index);
-                  setSlider(55);
-                }}
-                className={`rounded-xl px-4 py-3 text-sm font-black transition ${
-                  activePhoto === index
-                    ? "bg-[#F5D06F] text-[#07111F]"
-                    : "border border-white/15 bg-white/10 text-white hover:bg-white/15"
-                }`}
-              >
-                {set.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="rounded-[2rem] border border-white/10 bg-white/10 p-5 shadow-2xl backdrop-blur">
-          <div className="relative h-[420px] overflow-hidden rounded-[1.5rem] bg-slate-950">
-            <img
-              src={current.before}
-              alt={`${current.label} before cleaning`}
-              className="absolute inset-0 h-full w-full object-contain"
-            />
-
-            <img
-              src={current.after}
-              alt={`${current.label} after cleaning`}
-              className="absolute inset-0 h-full w-full object-contain"
-              style={{
-                clipPath: `inset(0 ${100 - slider}% 0 0)`,
-              }}
-            />
-
-            <div className="absolute left-6 top-6 rounded-full bg-black/60 px-4 py-2 text-sm font-black text-white backdrop-blur">
-              BEFORE
-            </div>
-
-            <div className="absolute left-6 top-20 rounded-full bg-[#F5D06F] px-4 py-2 text-sm font-black text-[#07111F] shadow-lg">
-              AFTER
-            </div>
-
-            <div
-              className="absolute inset-y-0 w-1 bg-[#F5D06F]"
-              style={{ left: `${slider}%` }}
-            >
-              <div className="absolute left-1/2 top-1/2 flex h-12 w-12 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-[#F5D06F] font-black text-[#07111F] shadow-xl">
-                ↔
-              </div>
-            </div>
-          </div>
-
-          <input
-            type="range"
-            min="15"
-            max="85"
-            value={slider}
-            onChange={(e) => setSlider(Number(e.target.value))}
-            className="mt-5 w-full accent-[#F5D06F]"
-            aria-label="Before and after image slider"
-          />
-
-          <div className="mt-5 rounded-2xl bg-white/10 p-5">
-            <p className="font-black text-[#F5D06F]">{current.label}</p>
-            <p className="mt-2 text-sm leading-6 text-slate-300">
-              {current.description}
+    <section className="mx-auto max-w-6xl px-6 pb-24 md:px-12 md:pb-36">
+      <h2 className="text-4xl font-extrabold leading-[1] tracking-[-0.035em] md:text-6xl">
+        Three steps. No surprises.
+      </h2>
+      <ol className="mt-12 grid gap-10 md:grid-cols-3">
+        {steps.map((step, index) => (
+          <li key={step} className="border-t border-white pt-5">
+            <span className="text-neutral-500">{index + 1}</span>
+            <p className="mt-3 text-2xl font-bold leading-tight tracking-tight">
+              {step}
             </p>
-          </div>
-        </div>
-      </div>
+          </li>
+        ))}
+      </ol>
     </section>
   );
 }
 
-function TestimonialsSection() {
-  const testimonials = [
-    {
-      quote:
-        "The clean felt organized from the start. Clear communication, clear scope, and the property looked ready when it mattered.",
-      name: "Airbnb Host",
-      detail: "Sample testimonial — replace with real client wording",
-    },
-    {
-      quote:
-        "The biggest difference was not having to chase updates. The process felt more professional than a normal one-off cleaner.",
-      name: "Property Owner",
-      detail: "Sample testimonial — replace with real client wording",
-    },
-    {
-      quote:
-        "The listing felt clean and presentable before the walkthrough. That first impression matters.",
-      name: "Realtor",
-      detail: "Sample testimonial — replace with real client wording",
-    },
-  ];
+const fieldClass =
+  "w-full border-0 border-b border-neutral-300 bg-transparent px-0 py-3 text-lg text-black outline-none transition placeholder:text-neutral-400 focus:border-black";
 
-  return (
-    <section className="relative bg-white">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,_rgba(245,208,111,0.12),_transparent_30%)]" />
-      <div className="relative mx-auto max-w-7xl px-6 py-24 md:px-10">
-        <div className="max-w-3xl">
-          <p className="text-sm font-black uppercase tracking-widest text-[#B98700]">
-            Client proof
-          </p>
-          <h2 className="mt-3 text-3xl font-black tracking-tight md:text-5xl">
-            The design is ready for testimonials. Now earn the real ones.
-          </h2>
-          <p className="mt-5 text-lg leading-8 text-slate-700">
-            These are placeholders written in the style of real client proof.
-            Replace them with actual testimonials as soon as you have them.
-          </p>
-        </div>
-
-        <div className="mt-12 grid gap-6 md:grid-cols-3">
-          {testimonials.map((item, index) => (
-            <div
-              key={item.name}
-              className="group rounded-3xl border border-slate-200 bg-[#F7F9FC] p-7 shadow-sm transition duration-500 hover:-translate-y-2 hover:shadow-2xl"
-              style={{
-                animation: `fadeUp 700ms ease ${index * 130}ms both`,
-              }}
-            >
-              <div className="text-4xl font-black text-[#F5D06F]">“</div>
-              <p className="mt-4 text-lg font-bold leading-8 text-[#0B1220]">
-                {item.quote}
-              </p>
-              <div className="mt-8 border-t border-slate-200 pt-5">
-                <p className="font-black">{item.name}</p>
-                <p className="mt-1 text-sm leading-6 text-slate-500">
-                  {item.detail}
-                </p>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div className="mt-8 rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm font-bold leading-7 text-[#7A5200]">
-          Don’t leave this placeholder language live forever. Real proof beats
-          pretty design.
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function ColdLeadSection() {
-  const steps = [
-    "Send property details, location, timing, and what needs attention.",
-    "Get a clear quote and confirmed scope before the job starts.",
-    "Review the clean, photos, and communication. Then decide if we deserve more work.",
-  ];
-
-  return (
-    <section className="relative overflow-hidden bg-white">
-      <div className="absolute inset-0 bg-[linear-gradient(120deg,_transparent,_rgba(245,208,111,0.13),_transparent)]" />
-
-      <div className="relative mx-auto max-w-7xl px-6 py-24 md:px-10">
-        <div className="mx-auto max-w-4xl text-center">
-          <p className="text-sm font-black uppercase tracking-widest text-[#B98700]">
-            Already have a cleaner?
-          </p>
-
-          <h2 className="mt-3 text-3xl font-black tracking-tight md:text-5xl">
-            Keep them. Test us on one clean.
-          </h2>
-
-          <p className="mt-6 text-lg leading-8 text-slate-700">
-            You do not have to replace your current cleaner today. Use Kafele
-            Kleaning for one turnover, one listing clean, or one move-out. Then
-            compare the communication, detail level, and photo verification.
-          </p>
-        </div>
-
-        <div className="mt-12 grid gap-6 md:grid-cols-3">
-          {steps.map((text, index) => (
-            <div
-              key={text}
-              className="rounded-3xl border border-slate-200 bg-[#F7F9FC] p-7 transition duration-500 hover:-translate-y-2 hover:shadow-xl"
-            >
-              <p className="text-sm font-black uppercase tracking-widest text-[#B98700]">
-                Step {index + 1}
-              </p>
-
-              <p className="mt-4 text-lg font-bold leading-8 text-[#0B1220]">
-                {text}
-              </p>
-            </div>
-          ))}
-        </div>
-
-        <div className="mt-10 text-center">
-          <a
-            href="#quote"
-            className="inline-block rounded-xl bg-[#07111F] px-8 py-4 font-black text-white transition hover:-translate-y-1 hover:bg-[#13233A]"
-          >
-            Test Us On One Clean
-          </a>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function FounderSection() {
-  return (
-    <section className="bg-[#F7F9FC]">
-      <div className="mx-auto grid max-w-7xl gap-10 px-6 py-24 md:grid-cols-[0.9fr_1.1fr] md:items-center md:px-10">
-        <div className="rounded-[2rem] bg-[#07111F] p-7 text-white shadow-2xl">
-          <div className="rounded-[1.5rem] border border-white/10 bg-white/10 p-7">
-            <p className="text-sm font-black uppercase tracking-widest text-[#F5D06F]">
-              Built on standards
-            </p>
-            <h3 className="mt-4 text-3xl font-black">
-              Systems first. Excuses last.
-            </h3>
-            <p className="mt-4 leading-8 text-slate-300">
-              Kafele Kleaning is built around the idea that property cleaning
-              should be structured, visible, and accountable.
-            </p>
-          </div>
-        </div>
-
-        <div>
-          <p className="text-sm font-black uppercase tracking-widest text-[#B98700]">
-            Founder credibility
-          </p>
-          <h2 className="mt-3 text-3xl font-black tracking-tight md:text-5xl">
-            Built by Nkosi Kafele with a focus on structure, standards, and
-            accountability.
-          </h2>
-          <p className="mt-6 text-lg leading-8 text-slate-700">
-            The company is positioned for clients who care about more than
-            surface-level cleaning. The focus is clear communication, defined
-            expectations, photo verification, and repeatable quality.
-          </p>
-          <a
-            href="#quote"
-            className="mt-8 inline-block rounded-xl bg-[#07111F] px-7 py-4 font-black text-white transition hover:-translate-y-1 hover:bg-[#13233A]"
-          >
-            Work With Kafele Kleaning
-          </a>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function QuoteCalculatorSection() {
-  const [sqft, setSqft] = useState(1200);
-  const [service, setService] = useState<ServiceType>("Airbnb Turnover Cleaning");
-  const [condition, setCondition] = useState("Normal");
-
-  const estimate = useMemo(() => {
-    let base = 275;
-
-    if (sqft > 1000 && sqft <= 2000) base = sqft * 0.16;
-    if (sqft > 2000 && sqft <= 3000) base = sqft * 0.15;
-    if (sqft > 3000 && sqft <= 5000) base = sqft * 0.14;
-    if (sqft > 5000) base = sqft * 0.13;
-
-    if (service === "Deep Cleaning") base *= 1.35;
-    if (service === "Move-In / Move-Out Cleaning") base *= 1.25;
-    if (service === "Pre-Listing Cleaning") base *= 1.15;
-    if (service === "Property Management Cleaning") base *= 1.1;
-
-    if (condition === "Heavy") base *= 1.3;
-    if (condition === "Light") base *= 0.9;
-
-    const low = Math.max(275, Math.round(base / 10) * 10);
-    const high = Math.round((low * 1.25) / 10) * 10;
-
-    return { low, high };
-  }, [sqft, service, condition]);
-
-  return (
-    <section id="calculator" className="bg-white">
-      <div className="mx-auto grid max-w-7xl gap-10 px-6 py-24 md:grid-cols-2 md:items-center md:px-10">
-        <div>
-          <p className="text-sm font-black uppercase tracking-widest text-[#B98700]">
-            Interactive estimate
-          </p>
-          <h2 className="mt-3 text-3xl font-black tracking-tight md:text-5xl">
-            Get a rough pricing range before requesting an exact quote.
-          </h2>
-          <p className="mt-6 text-lg leading-8 text-slate-700">
-            This calculator gives a rough range based on property size, service
-            type, and condition. Final pricing depends on photos, timing, access,
-            add-ons, and property condition.
-          </p>
-        </div>
-
-        <div className="rounded-[2rem] border border-slate-200 bg-[#F7F9FC] p-7 shadow-xl">
-          <div className="rounded-3xl bg-[#07111F] p-6 text-white">
-            <p className="text-sm font-black uppercase tracking-widest text-[#F5D06F]">
-              Estimated Range
-            </p>
-            <p className="mt-3 text-5xl font-black">
-              ${estimate.low}–${estimate.high}
-            </p>
-            <p className="mt-3 text-sm leading-6 text-slate-300">
-              Rough estimate only. Request a quote for exact pricing.
-            </p>
-          </div>
-
-          <div className="mt-6 grid gap-5">
-            <label className="grid gap-2">
-              <span className="font-bold">Square Footage: {sqft} sq ft</span>
-              <input
-                type="range"
-                min="500"
-                max="6000"
-                step="100"
-                value={sqft}
-                onChange={(e) => setSqft(Number(e.target.value))}
-                className="accent-[#F5D06F]"
-              />
-            </label>
-
-            <label className="grid gap-2">
-              <span className="font-bold">Service Type</span>
-              <select
-                value={service}
-                onChange={(e) => setService(e.target.value as ServiceType)}
-                className="rounded-xl border border-slate-300 bg-white px-4 py-3 outline-none focus:border-[#B98700]"
-              >
-                <option>Airbnb Turnover Cleaning</option>
-                <option>Pre-Listing Cleaning</option>
-                <option>Deep Cleaning</option>
-                <option>Move-In / Move-Out Cleaning</option>
-                <option>Property Management Cleaning</option>
-                <option>Not sure yet</option>
-              </select>
-            </label>
-
-            <label className="grid gap-2">
-              <span className="font-bold">Condition</span>
-              <select
-                value={condition}
-                onChange={(e) => setCondition(e.target.value)}
-                className="rounded-xl border border-slate-300 bg-white px-4 py-3 outline-none focus:border-[#B98700]"
-              >
-                <option>Light</option>
-                <option>Normal</option>
-                <option>Heavy</option>
-              </select>
-            </label>
-
-            <a
-              href="#quote"
-              className="rounded-xl bg-[#F5D06F] px-7 py-4 text-center font-black text-[#07111F] transition hover:-translate-y-1 hover:bg-[#FFE28A]"
-            >
-              Request Exact Quote
-            </a>
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function ProofSection() {
-  const proofItems = [
-    "Arrival confirmation",
-    "Before photos",
-    "After photos",
-    "Room-by-room checklist",
-    "Client priorities noted",
-    "Quality issues tracked and corrected",
-  ];
-
-  return (
-    <section className="bg-[#F7F9FC]">
-      <div className="mx-auto grid max-w-7xl gap-10 px-6 py-24 md:grid-cols-2 md:items-center md:px-10">
-        <div className="rounded-3xl bg-white p-8 shadow-sm">
-          <div className="grid gap-4">
-            {proofItems.map((item, index) => (
-              <div
-                key={item}
-                className="rounded-2xl border border-slate-200 bg-[#F7F9FC] p-5 font-bold transition duration-300 hover:-translate-x-1 hover:bg-white hover:shadow-md"
-                style={{
-                  animation: `fadeUp 700ms ease ${index * 80}ms both`,
-                }}
-              >
-                ✓ {item}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div>
-          <p className="text-sm font-black uppercase tracking-widest text-[#B98700]">
-            Visible accountability
-          </p>
-
-          <h2 className="mt-3 text-3xl font-black tracking-tight md:text-5xl">
-            You should not have to wonder if the job was done right.
-          </h2>
-
-          <p className="mt-6 text-lg leading-8 text-slate-700">
-            Most cleaning companies ask you to trust their word. Our process is
-            designed to give property owners, hosts, agents, and managers more
-            visibility through confirmations, checklists, and photo proof.
-          </p>
-
-          <a
-            href="#quote"
-            className="mt-8 inline-block rounded-xl bg-[#07111F] px-7 py-4 font-black text-white transition hover:-translate-y-1 hover:bg-[#13233A]"
-          >
-            Check Availability
-          </a>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function QuoteSection() {
+function Quote({
+  service,
+  onServiceChange,
+}: {
+  service: string;
+  onServiceChange: (option: string) => void;
+}) {
   const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">(
     "idle"
   );
@@ -1184,21 +399,19 @@ function QuoteSection() {
     setStatus("sending");
 
     try {
-      const response = await fetch(
-        "https://hook.eu1.make.com/686xm5yw89izbiijypiq50cbxvgqhgha",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        }
-      );
+      const response = await fetch(WEBHOOK_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
 
       if (!response.ok) throw new Error("Request failed");
 
       formElement.reset();
+      onServiceChange(DEFAULT_SERVICE);
       setStatus("sent");
     } catch {
-      // Fall back to the old email draft so the lead is never lost.
+      // Fall back to an email draft so the lead is never lost.
       const subject = encodeURIComponent("Cleaning Quote Request");
       const body = encodeURIComponent(
         `Name: ${payload.name}\n` +
@@ -1211,104 +424,80 @@ function QuoteSection() {
           `What needs attention: ${payload.details}`
       );
       setStatus("error");
-      window.location.href = `mailto:Kafele.kleaning@gmail.com?subject=${subject}&body=${body}`;
+      window.location.href = `mailto:${EMAIL}?subject=${subject}&body=${body}`;
     }
   };
 
-  const inputFields = [
-    {
-      label: "Name",
-      name: "name",
-      placeholder: "Your name",
-    },
-    {
-      label: "Phone or Email",
-      name: "contact",
-      placeholder: "Best way to reach you",
-    },
-    {
-      label: "Property Size",
-      name: "propertySize",
-      placeholder: "Example: 2 bed / 2 bath, 1,200 sq ft",
-    },
-    {
-      label: "City",
-      name: "city",
-      placeholder: "Example: Torrance, Redondo Beach, Los Angeles",
-    },
-    {
-      label: "Preferred Cleaning Date",
-      name: "date",
-      placeholder: "Example: This Friday morning",
-    },
-  ];
-
   return (
-    <section id="quote" className="mx-auto max-w-7xl px-6 py-24 md:px-10">
-      <div className="grid gap-10 md:grid-cols-2">
+    <section id="quote" className="scroll-mt-0 bg-white text-black">
+      <div className="mx-auto grid max-w-6xl gap-14 px-6 py-24 md:grid-cols-[5fr_6fr] md:gap-20 md:px-12 md:py-36">
         <div>
-          <p className="text-sm font-black uppercase tracking-widest text-[#B98700]">
-            Request pricing
-          </p>
-
-          <h2 className="mt-3 text-3xl font-black tracking-tight md:text-5xl">
-            Start with one property. No pressure. Just clear pricing.
+          <h2 className="text-5xl font-extrabold leading-[0.95] tracking-[-0.04em] md:text-7xl">
+            Get a quote.
           </h2>
-
-          <p className="mt-6 text-lg leading-8 text-slate-700">
-            Send the property details and we’ll give you straightforward pricing.
-            If it makes sense, start with one clean so you can judge the process
-            before making a bigger decision.
+          <p className="mt-6 max-w-sm text-lg leading-7 text-neutral-600">
+            Give us the basics and you&apos;ll get a price, not a sales pitch.
+            Start with one clean and judge us on the result.
           </p>
-
-          <div className="mt-8 space-y-4">
-            {[
-              "Best for Airbnb turnovers, move-outs, listings, and property management support.",
-              "Photo verification available for off-site owners, hosts, agents, and managers.",
-              "Clear scope before the job so expectations are not vague.",
-            ].map((item) => (
-              <div
-                key={item}
-                className="rounded-2xl border border-slate-200 bg-white p-5 font-bold shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
-              >
-                ✓ {item}
-              </div>
-            ))}
-          </div>
+          <p className="mt-8 text-neutral-600">
+            Prefer email?{" "}
+            <a
+              href={`mailto:${EMAIL}`}
+              className="font-bold text-black underline underline-offset-4"
+            >
+              {EMAIL}
+            </a>
+          </p>
         </div>
 
-        <form
-          onSubmit={handleSubmit}
-          className="rounded-3xl border border-slate-200 bg-white p-7 shadow-xl"
-        >
-          <div className="mb-6 rounded-2xl bg-[#07111F] p-5 text-white">
-            <p className="font-black">Fastest way to get accurate pricing:</p>
-            <p className="mt-2 text-sm leading-6 text-slate-300">
-              Include property size, city, service type, preferred date, and any
-              areas that need extra attention.
-            </p>
+        <form onSubmit={handleSubmit} className="grid gap-6">
+          <label className="grid">
+            <span className="text-sm font-bold">Name</span>
+            <input
+              name="name"
+              required
+              autoComplete="name"
+              className={fieldClass}
+              placeholder="Your name"
+            />
+          </label>
+
+          <label className="grid">
+            <span className="text-sm font-bold">Phone or email</span>
+            <input
+              name="contact"
+              required
+              autoComplete="email"
+              className={fieldClass}
+              placeholder="Best way to reach you"
+            />
+          </label>
+
+          <div className="grid gap-6 sm:grid-cols-2">
+            <label className="grid">
+              <span className="text-sm font-bold">City</span>
+              <input
+                name="city"
+                required
+                autoComplete="address-level2"
+                className={fieldClass}
+                placeholder="Santa Monica"
+              />
+            </label>
+            <label className="grid">
+              <span className="text-sm font-bold">Preferred date</span>
+              <input
+                name="date"
+                className={fieldClass}
+                placeholder="This Friday morning"
+              />
+            </label>
           </div>
 
-          <div className="grid gap-5">
-            {inputFields.map((field) => (
-              <label key={field.name} className="grid gap-2">
-                <span className="font-bold">{field.label}</span>
-                <input
-                  name={field.name}
-                  required
-                  className="rounded-xl border border-slate-300 px-4 py-3 outline-none transition focus:border-[#B98700] focus:ring-4 focus:ring-[#F5D06F]/20"
-                  placeholder={field.placeholder}
-                />
-              </label>
-            ))}
-
-            <label className="grid gap-2">
-              <span className="font-bold">Which best describes you?</span>
-              <select
-                name="clientType"
-                required
-                className="rounded-xl border border-slate-300 px-4 py-3 outline-none transition focus:border-[#B98700] focus:ring-4 focus:ring-[#F5D06F]/20"
-              >
+          <div className="grid gap-6 sm:grid-cols-2">
+            <label className="grid">
+              <span className="text-sm font-bold">I am a</span>
+              <select name="clientType" className={fieldClass}>
                 <option>Airbnb Host</option>
                 <option>Realtor</option>
                 <option>Property Manager</option>
@@ -1316,13 +505,13 @@ function QuoteSection() {
                 <option>Other</option>
               </select>
             </label>
-
-            <label className="grid gap-2">
-              <span className="font-bold">Service Needed</span>
+            <label className="grid">
+              <span className="text-sm font-bold">Service</span>
               <select
                 name="service"
-                required
-                className="rounded-xl border border-slate-300 px-4 py-3 outline-none transition focus:border-[#B98700] focus:ring-4 focus:ring-[#F5D06F]/20"
+                value={service}
+                onChange={(event) => onServiceChange(event.target.value)}
+                className={fieldClass}
               >
                 <option>Airbnb Turnover Cleaning</option>
                 <option>Pre-Listing Cleaning</option>
@@ -1332,217 +521,73 @@ function QuoteSection() {
                 <option>Not sure yet</option>
               </select>
             </label>
-
-            <label className="grid gap-2">
-              <span className="font-bold">What needs the most attention?</span>
-              <textarea
-                name="details"
-                required
-                className="min-h-32 rounded-xl border border-slate-300 px-4 py-3 outline-none transition focus:border-[#B98700] focus:ring-4 focus:ring-[#F5D06F]/20"
-                placeholder="Tell us about the condition, priorities, timing, or problem areas."
-              />
-            </label>
-
-            <input
-              type="text"
-              name="company"
-              tabIndex={-1}
-              autoComplete="off"
-              aria-hidden="true"
-              className="hidden"
-            />
-
-            <button
-              type="submit"
-              disabled={status === "sending"}
-              className="rounded-xl bg-[#07111F] px-7 py-4 text-center font-black text-white transition hover:-translate-y-1 hover:bg-[#13233A] disabled:opacity-60"
-            >
-              {status === "sending" ? "Sending..." : "Send Quote Request"}
-            </button>
-
-            {status === "sent" && (
-              <p className="rounded-xl bg-green-50 px-4 py-3 text-center text-sm font-bold text-green-800">
-                Got it. We received your request and will be in touch with
-                pricing.
-              </p>
-            )}
-
-            <p className="text-center text-sm text-slate-500">
-              Prefer direct contact? Email:{" "}
-              <a
-                href="mailto:Kafele.kleaning@gmail.com"
-                className="font-bold text-[#07111F] underline-offset-4 hover:underline"
-              >
-                Kafele.kleaning@gmail.com
-              </a>
-            </p>
           </div>
-        </form>
-      </div>
-    </section>
-  );
-}
 
-function LeadMagnetSection() {
-  const handleDownload = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-
-    const form = new FormData(event.currentTarget);
-    const email = form.get("email") || "";
-
-    const subject = encodeURIComponent("Airbnb Turnover Checklist Request");
-    const body = encodeURIComponent(
-      `A visitor requested the Airbnb Turnover Quality Checklist.\n\nEmail: ${email}`
-    );
-
-    window.location.href = `mailto:Kafele.kleaning@gmail.com?subject=${subject}&body=${body}`;
-  };
-
-  return (
-    <section className="bg-[#07111F] text-white">
-      <div className="mx-auto grid max-w-7xl gap-10 px-6 py-24 md:grid-cols-2 md:items-center md:px-10">
-        <div>
-          <p className="text-sm font-black uppercase tracking-widest text-[#F5D06F]">
-            Lead magnet
-          </p>
-          <h2 className="mt-3 text-3xl font-black tracking-tight md:text-5xl">
-            Not ready to book? Get the Airbnb Turnover Quality Checklist.
-          </h2>
-          <p className="mt-6 text-lg leading-8 text-slate-300">
-            This gives cold visitors a lower-pressure action. Even if they are
-            not ready for a quote, you still create a lead.
-          </p>
-        </div>
-
-        <form
-          onSubmit={handleDownload}
-          className="rounded-[2rem] border border-white/10 bg-white/10 p-7 shadow-2xl backdrop-blur"
-        >
-          <p className="text-xl font-black">Request the checklist</p>
-          <p className="mt-3 leading-7 text-slate-300">
-            Enter an email and the request will open as a message to Kafele
-            Kleaning.
-          </p>
-
-          <label className="mt-6 grid gap-2">
-            <span className="font-bold">Email</span>
+          <label className="grid">
+            <span className="text-sm font-bold">Property size</span>
             <input
-              name="email"
-              type="email"
-              required
-              placeholder="your@email.com"
-              className="rounded-xl border border-white/20 bg-white px-4 py-3 text-[#07111F] outline-none focus:ring-4 focus:ring-[#F5D06F]/30"
+              name="propertySize"
+              className={fieldClass}
+              placeholder="2 bed, 2 bath, 1,200 sq ft"
             />
           </label>
 
+          <label className="grid">
+            <span className="text-sm font-bold">Anything we should know?</span>
+            <textarea
+              name="details"
+              rows={3}
+              className={fieldClass}
+              placeholder="Condition, timing, problem areas"
+            />
+          </label>
+
+          <input
+            type="text"
+            name="company"
+            tabIndex={-1}
+            autoComplete="off"
+            aria-hidden="true"
+            className="hidden"
+          />
+
           <button
             type="submit"
-            className="mt-5 w-full rounded-xl bg-[#F5D06F] px-7 py-4 font-black text-[#07111F] transition hover:-translate-y-1 hover:bg-[#FFE28A]"
+            disabled={status === "sending"}
+            className="mt-2 rounded-full bg-black px-8 py-4 text-base font-bold text-white transition hover:bg-neutral-800 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-black disabled:opacity-60"
           >
-            Get Checklist
+            {status === "sending" ? "Sending..." : "Send request"}
           </button>
+
+          {status === "sent" && (
+            <p
+              role="status"
+              className="border-l-4 border-black pl-4 text-base font-bold"
+            >
+              Got it. We received your request and will be in touch with
+              pricing.
+            </p>
+          )}
         </form>
       </div>
     </section>
   );
 }
 
-function FAQSection() {
-  const faqs = [
-    {
-      q: "I already have a cleaner. Why would I test Kafele Kleaning?",
-      a: "You do not need to switch immediately. Test us on one clean and compare the communication, scope, detail level, and photo verification.",
-    },
-    {
-      q: "Do you work with Airbnb hosts?",
-      a: "Yes. Airbnb turnovers are one of our core services. We focus on reliable resets, detail checks, guest-ready presentation, and photo confirmation.",
-    },
-    {
-      q: "Do you clean for realtors before showings or listings?",
-      a: "Yes. We help prepare properties before listings, showings, move-ins, and move-outs so the space presents clean and professionally handled.",
-    },
-    {
-      q: "Do you work with property managers?",
-      a: "Yes. We support move-outs, vacant units, turnover cleaning, and property management cleaning needs where communication and consistency matter.",
-    },
-    {
-      q: "Do you send before and after photos?",
-      a: "Yes. Photo verification is available so clients can see the work without needing to be on-site.",
-    },
-    {
-      q: "How do you price?",
-      a: "Pricing depends on property size, service type, condition, timing, and scope. The calculator gives a rough range, but exact pricing comes after the property details are reviewed.",
-    },
-    {
-      q: "What happens if something is missed?",
-      a: "The issue gets reviewed and the process gets tightened. The goal is not to hide problems. The goal is to create accountability and prevent repeats.",
-    },
-    {
-      q: "How fast can I get a quote?",
-      a: "Send the property size, service type, location, preferred timing, and condition. The clearer the information, the faster we can price the job.",
-    },
-  ];
-
+function Footer() {
   return (
-    <section className="bg-white">
-      <div className="mx-auto max-w-4xl px-6 py-24 md:px-10">
-        <p className="text-center text-sm font-black uppercase tracking-widest text-[#B98700]">
-          FAQ
-        </p>
-
-        <h2 className="mt-3 text-center text-3xl font-black tracking-tight md:text-5xl">
-          Questions clients usually ask first.
-        </h2>
-
-        <div className="mt-12 space-y-4">
-          {faqs.map((faq) => (
-            <details
-              key={faq.q}
-              className="group rounded-2xl border border-slate-200 bg-[#F7F9FC] p-6 transition hover:-translate-y-1 hover:bg-white hover:shadow-lg"
-            >
-              <summary className="cursor-pointer list-none text-lg font-black">
-                <span className="inline-flex w-full items-center justify-between gap-4">
-                  {faq.q}
-                  <span className="rounded-full bg-[#07111F] px-3 py-1 text-sm text-white transition group-open:rotate-45">
-                    +
-                  </span>
-                </span>
-              </summary>
-              <p className="mt-4 leading-7 text-slate-700">{faq.a}</p>
-            </details>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function FinalCTA() {
-  return (
-    <section className="relative overflow-hidden bg-[#07111F] text-white">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(245,208,111,0.18),_transparent_35%)]" />
-
-      <div className="relative mx-auto max-w-5xl px-6 py-24 text-center md:px-10">
-        <p className="text-sm font-black uppercase tracking-widest text-[#F5D06F]">
-          Ready when the property needs to be right
-        </p>
-
-        <h2 className="mt-4 text-3xl font-black tracking-tight md:text-5xl">
-          Stop gambling with cleaners who leave you guessing.
-        </h2>
-
-        <p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-slate-300">
-          Get a structured cleaning partner built around standards,
-          accountability, and photo-verified results.
-        </p>
-
-        <a
-          href="#quote"
-          className="mt-8 inline-block rounded-xl bg-[#F5D06F] px-8 py-4 font-black text-[#07111F] transition hover:-translate-y-1 hover:bg-[#FFE28A]"
-        >
-          Request a Quote
-        </a>
-      </div>
-    </section>
+    <footer className="mx-auto flex max-w-6xl flex-col gap-3 px-6 py-12 text-neutral-400 md:flex-row md:items-center md:justify-between md:px-12">
+      <p className="flex items-center gap-3 font-bold text-white">
+        <Logo size={40} />
+        Kafele Kleaning
+      </p>
+      <p>Los Angeles, Orange County and Palm Springs</p>
+      <a
+        href={`mailto:${EMAIL}`}
+        className="hover:text-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
+      >
+        {EMAIL}
+      </a>
+    </footer>
   );
 }
