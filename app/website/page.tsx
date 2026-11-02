@@ -229,14 +229,27 @@ function Hero() {
         ref={photoRef}
         className="absolute inset-0 will-change-transform"
       >
+        {/* Soft blurred copy fills the screen around the full photo. */}
         <Image
           src="/cleaning-photos/hero-living-room.jpg"
-          alt="Clean, staged living room in a short-term rental"
+          alt=""
+          aria-hidden="true"
           fill
           priority
-          sizes="100vw"
-          className="object-cover object-[50%_58%]"
+          sizes="40vw"
+          className="scale-110 object-cover blur-2xl brightness-50"
         />
+        {/* Zoomed out: most of the room shows. On wide screens it sits to the right of the headline. */}
+        <div className="absolute left-0 top-0 aspect-[3/4] w-full [mask-image:linear-gradient(to_bottom,black_72%,transparent)] md:inset-y-0 md:left-auto md:right-0 md:aspect-auto md:h-full md:w-[64%] md:[mask-image:linear-gradient(to_right,transparent,black_22%)]">
+          <Image
+            src="/cleaning-photos/hero-living-room.jpg"
+            alt="Clean, staged living room in a short-term rental"
+            fill
+            priority
+            sizes="(min-width: 768px) 50vw, 100vw"
+            className="object-cover"
+          />
+        </div>
       </div>
       {/* Light on top so the photo keeps its color, dark at the bottom for the headline. */}
       <div className="absolute inset-0 bg-gradient-to-t from-black via-black/25 to-black/10" />
