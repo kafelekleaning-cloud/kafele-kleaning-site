@@ -230,12 +230,12 @@ function Hero() {
         className="absolute inset-0 will-change-transform"
       >
         <Image
-          src="/cleaning-photos/hero-bedroom.jpg"
-          alt="Clean, freshly made bedroom in a short-term rental"
+          src="/cleaning-photos/hero-living-room.jpg"
+          alt="Clean, staged living room in a short-term rental"
           fill
           priority
           sizes="100vw"
-          className="object-cover"
+          className="object-cover object-[50%_58%]"
         />
       </div>
       {/* Light on top so the photo keeps its color, dark at the bottom for the headline. */}
