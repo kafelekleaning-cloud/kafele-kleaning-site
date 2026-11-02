@@ -230,8 +230,8 @@ function Hero() {
         className="absolute inset-0 will-change-transform"
       >
         <Image
-          src="/cleaning-photos/before-couch.jpeg"
-          alt="Living room of a short-term rental, cleaned and staged for the next guest"
+          src="/cleaning-photos/hero-bedroom.jpg"
+          alt="Clean, freshly made bedroom in a short-term rental"
           fill
           priority
           sizes="100vw"
